@@ -1,0 +1,15 @@
+{
+  "name": "Chronicle Forge · 无限分支时间轴",
+  "short_name": "Chronicle Forge",
+  "description": "打开即用的中文多层时间线编辑器，面向历史整理、人物小传与架空世界观创作。",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#040316",
+  "theme_color": "#f3f3f1",
+  "icons": [
+    { "src": "assets/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/app-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

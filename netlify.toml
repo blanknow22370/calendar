@@ -1,0 +1,19 @@
+# Netlify 配置：把 source/ 目录作为静态站点直接发布，无需构建步骤。
+# 用法：在 Netlify 中选择该目录，或运行 npx netlify-cli deploy --dir=.
+
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "SAMEORIGIN"
+
+# 带内容的哈希或版本化文件名不存在，因此为图标与静态资源设置短缓存，
+# index.html 保持不缓存，保证改版后立即生效。
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

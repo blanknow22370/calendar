@@ -1,0 +1,19 @@
+{
+  "name": "chronicle-forge",
+  "version": "3.6.0",
+  "description": "Chronicle Forge 中文多层时间线桌面编辑器",
+  "main": "desktop.js",
+  "author": "Chronicle Forge",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "package:win": "node scripts/package-windows.cjs",
+    "build:web": "node scripts/build-web.cjs",
+    "serve:web": "python -m http.server 4173"
+  },
+  "devDependencies": {
+    "@electron/packager": "^19.0.2",
+    "electron": "^43.2.0"
+  }
+}

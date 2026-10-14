@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="paper">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src https://zh.wikipedia.org https://www.wikidata.org https://openlibrary.org; object-src 'none'; base-uri 'none'; form-action 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f3f1" />
+    <title>Chronicle Forge · 无限分支时间轴</title>
+    <meta name="description" content="打开即用的中文多层时间线编辑器，面向历史整理、人物小传与架空世界观创作。多世界线、秒级时间刻度、跨来源素材检索，纯静态、无需安装。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Chronicle Forge · 无限分支时间轴" />
+    <meta property="og:description" content="多世界线、秒级时间刻度、跨来源素材检索的中文时间线编辑器，纯静态、无需安装。" />
+    <link rel="icon" href="assets/app-icon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg" />
+    <link rel="apple-touch-icon" href="assets/app-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <div class="app-shell" id="appShell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div>
+            <p class="eyebrow">CHRONICLE FORGE</p>
+            <input id="projectTitle" class="project-title" value="示例项目 · 双线时间轴" aria-label="项目名称" />
+          </div>
+        </div>
+        <nav class="toolbar" aria-label="主要操作">
+          <button class="button ghost" id="undoBtn" title="撤销 Ctrl+Z">↶</button>
+          <button class="button ghost" id="redoBtn" title="重做 Ctrl+Shift+Z">↷</button>
+          <span class="toolbar-divider"></span>
+          <button class="button" id="fitBtn">总览</button>
+          <button class="button" id="todayBtn" title="输入年份并快速定位">⌖ 定位年份</button>
+          <button class="button accent" id="addEventBtn">＋ 新建节点</button>
+          <button class="button" id="parseBtn">✦ 解析文本</button>
+          <button class="button" id="materialBtn">⌕ 素材库</button>
+          <button class="button theme-trigger" id="themeBtn" aria-haspopup="true" aria-expanded="false">
+            <span class="theme-trigger-dot" aria-hidden="true"></span>
+            <span class="theme-trigger-label">风格</span>
+          </button>
+          <button class="button ghost" id="presentBtn" title="演示模式">◩</button>
+          <button class="button ghost" id="moreBtn" title="项目菜单">•••</button>
+        </nav>
+      </header>
+
+      <aside class="branch-panel glass-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">WORLD LAYERS</p>
+            <h2>面线与轨线</h2>
+          </div>
+          <div class="layer-add-actions"><button class="icon-button" id="addSurfaceBtn" title="新增面线">面</button><button class="icon-button" id="addBranchBtn" title="新增轨线">＋</button></div>
+        </div>
+        <div id="branchList" class="branch-list"></div>
+        <div class="legend-card">
+          <span class="pulse-dot"></span>
+          <div>
+            <strong>已自动保存</strong>
+            <small id="saveStatus">保存在此浏览器</small>
+          </div>
+        </div>
+        <div class="mini-help">
+          <span><kbd>拖拽</kbd> 平移</span>
+          <span><kbd>滚轮</kbd> 缩放</span>
+          <span><kbd>双击</kbd> 插入</span>
+          <span><kbd>↕</kbd> 面线高度</span>
+        </div>
+      </aside>
+
+      <main class="timeline-stage" id="timelineStage">
+        <div class="stage-vignette" aria-hidden="true"></div>
+        <div class="timeline-topline">
+          <div class="date-readout">
+            <span class="live-glyph"></span>
+            <span id="rangeReadout">公元 1200 — 1550</span>
+            <button class="calendar-chip" id="calendarBtn" type="button" title="切换或导入历法">公历</button>
+            <div class="granularity-control" id="granularityControl" role="group" aria-label="时间显示粒度">
+              <button type="button" data-granularity="year" title="按年显示并匹配连续关系">年</button>
+              <button type="button" data-granularity="month" title="按月显示；保留年级连续链同行">月</button>
+              <button type="button" data-granularity="day" title="按日显示；保留上级连续链同行">日</button>
+            </div>
+          </div>
+          <label class="timeline-search-wrap" aria-label="搜索时间线事件">
+            <span aria-hidden="true">⌕</span>
+            <input id="timelineSearch" class="timeline-search" type="search" placeholder="聚焦搜索事件…" autocomplete="off" />
+            <small id="searchCount" hidden></small>
+          </label>
+          <div class="zoom-control">
+            <button id="zoomOutBtn" aria-label="缩小">−</button>
+            <input id="zoomSlider" type="range" min="0" max="100" value="50" aria-label="缩放" />
+            <button id="zoomInBtn" aria-label="放大">＋</button>
+            <span id="zoomReadout">100%</span>
+          </div>
+        </div>
+        <div class="timeline-viewport" id="timelineViewport" tabindex="0">
+          <svg class="timeline-svg" id="timelineSvg" aria-hidden="true"></svg>
+          <div class="branch-label-layer" id="branchLabelLayer"></div>
+          <div class="event-layer" id="eventLayer"></div>
+          <div class="empty-state" id="emptyState" hidden>
+            <span>✦</span>
+            <h3>这卷史书还是空白</h3>
+            <p>双击时间轴插入节点，或让自然语言解析器替你铺开历史。</p>
+          </div>
+        </div>
+        <div class="minimap" id="minimap">
+          <canvas id="minimapCanvas"></canvas>
+          <div class="minimap-window" id="minimapWindow"></div>
+        </div>
+      </main>
+
+      <aside class="inspector glass-panel" id="inspector">
+        <section class="card-library" id="cardLibrary">
+          <div class="panel-heading library-heading">
+            <div>
+              <p class="eyebrow">CARD LIBRARY</p>
+              <h2>事件卡片库</h2>
+            </div>
+            <span class="library-count" id="libraryCount">0</span>
+          </div>
+          <p class="library-hint">拖动卡片到轨道可复制；拖入文件可直接建卡。</p>
+          <div id="eventLibrary" class="event-library"></div>
+        </section>
+        <div class="inspector-empty" id="inspectorEmpty">
+          <p>选择轨道或卡片库中的节点以编辑详情。</p>
+        </div>
+        <form id="eventForm" class="event-form" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">SELECTED NODE</p>
+              <h2 id="inspectorHeading">编辑节点</h2>
+              <span class="node-origin-pill" id="nodeOriginPill">自建节点</span>
+            </div>
+            <button type="button" class="icon-button" id="closeInspectorBtn">×</button>
+          </div>
+          <div class="node-quick-actions">
+            <button type="button" class="button accent" id="openDetailBtn">打开详细页面</button>
+            <button type="button" class="button" id="duplicateEventBtn">创建副本</button>
+          </div>
+          <button type="button" class="description-preview" id="descriptionPreview">尚未补充详细内容</button>
+          <details class="function-group" open>
+            <summary><span>基本信息</span><small>名称与类型</small></summary>
+            <div class="function-group-body">
+              <label>标题<input id="eventTitle" required placeholder="例如：朱元璋即位" /></label>
+              <label>节点类型<select id="eventType">
+                <option value="event">历史事件</option>
+                <option value="person">人物</option>
+                <option value="era">时代 / 朝代</option>
+                <option value="lore">背景设定</option>
+              </select></label>
+            </div>
+          </details>
+          <details class="function-group">
+            <summary><span>时间与轨线</span><small>定位</small></summary>
+            <div class="function-group-body">
+              <div class="field-row event-time-row">
+                <label>开始时间<input id="eventStart" required placeholder="1368-01-01 00:00:00" /></label>
+                <label>结束时间<input id="eventEnd" placeholder="可选，精确到秒" /></label>
+              </div>
+              <small class="calendar-input-hint" id="calendarInputHint"></small>
+              <label>所属分支<select id="eventBranch"></select></label>
+              <fieldset class="continuity-control" id="continuityControl">
+                <legend>相接事件显示</legend>
+                <input id="eventContinuityMode" type="hidden" value="auto" />
+                <button type="button" data-continuity-mode="auto" aria-pressed="true">
+                  <span class="continuity-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 28 20"><rect x="1" y="3" width="9" height="14" rx="3"></rect><path d="M10 10h8"></path><path d="m15 7 3 3-3 3"></path><rect x="18" y="3" width="9" height="14" rx="3"></rect></svg>
+                  </span>
+                  <span><strong>智能接续</strong><small>同粒度相接，连续链保持同行</small></span>
+                </button>
+                <button type="button" data-continuity-mode="separate" aria-pressed="false">
+                  <span class="continuity-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 28 20"><rect x="1" y="1" width="11" height="7" rx="2"></rect><rect x="16" y="12" width="11" height="7" rx="2"></rect><path d="M12 5h5v10h-1"></path></svg>
+                  </span>
+                  <span><strong>独立成行</strong><small>不加入连续链，排在独立区域</small></span>
+                </button>
+              </fieldset>
+              <p class="continuity-hint" id="eventContinuityHint"></p>
+            </div>
+          </details>
+          <details class="function-group" id="appearanceFunctionGroup">
+            <summary><span>节点外观</span><small>颜色与符号</small></summary>
+            <div class="function-group-body field-row event-appearance-row">
+              <label>标记色<input id="eventColor" type="color" /></label>
+              <label>标记符号<select id="eventSymbol">
+                <option value="◆">◆ 菱形</option>
+                <option value="●">● 圆形</option>
+                <option value="▲">▲ 三角</option>
+                <option value="★">★ 星标</option>
+                <option value="♙">♙ 人物</option>
+                <option value="▰">▰ 区间</option>
+                <option value="✦">✦ 设定</option>
+              </select></label>
+            </div>
+          </details>
+          <details class="function-group" id="sourceFunctionGroup">
+            <summary><span id="eventSourceGroupTitle">资料与素材</span><small id="eventSourceGroupHint">引用来源</small></summary>
+            <div class="function-group-body">
+              <label><span id="eventSourceLabelText">资料来源</span><input id="eventSource" placeholder="网址或书目，可选" /></label>
+              <div class="material-node-meta" id="materialNodeMeta" hidden></div>
+              <div class="search-results" id="searchResults" hidden></div>
+              <button type="button" class="button function-button" id="searchEventBtn">搜索相关素材</button>
+            </div>
+          </details>
+          <details class="function-group" id="fileFunctionGroup" hidden>
+            <summary><span>文件信息</span><small>节点元数据</small></summary>
+            <div class="function-group-body">
+              <dl class="file-meta-list" id="fileMetaList"></dl>
+              <div class="attachment-list" id="attachmentList" hidden></div>
+            </div>
+          </details>
+          <details class="function-group">
+            <summary><span>节点操作</span><small>保存与管理</small></summary>
+            <div class="function-group-body form-actions inspector-actions">
+              <button type="button" class="button danger" id="deleteEventBtn">删除</button>
+              <button type="submit" class="button accent">保存修改</button>
+            </div>
+          </details>
+        </form>
+      </aside>
+    </div>
+
+    <dialog id="parseDialog" class="modal parse-modal">
+      <form method="dialog" class="modal-card">
+        <div class="modal-header">
+          <div><p class="eyebrow">NATURAL LANGUAGE PARSER</p><h2>把文字变成时间轴</h2></div>
+          <button class="icon-button" value="cancel">×</button>
+        </div>
+        <div class="parse-layout">
+          <section>
+            <label for="timelineText">粘贴自然语言时间线</label>
+            <textarea id="timelineText" rows="17" spellcheck="false"></textarea>
+            <div class="parser-hints">支持 “1328年……” “1206年-1368年……”；无年份段落会作为背景设定附在最近节点。</div>
+          </section>
+          <section class="parse-preview-section">
+            <div class="preview-title"><span>解析预览</span><strong id="parseCount">0 个节点</strong></div>
+            <div id="parsePreview" class="parse-preview"></div>
+          </section>
+        </div>
+        <div class="modal-actions">
+          <button class="button" value="cancel">取消</button>
+          <button type="button" class="button" id="previewParseBtn">重新解析</button>
+          <button type="button" class="button accent" id="confirmParseBtn">加入时间轴</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="branchDialog" class="modal compact-modal">
+      <form id="branchForm" class="modal-card">
+        <div class="modal-header">
+          <div><p class="eyebrow">WORLD LAYER</p><h2 id="branchDialogHeading">创建时间分支</h2></div>
+          <button type="button" class="icon-button" id="closeBranchDialog">×</button>
+        </div>
+        <label>分支名称<input id="branchName" required placeholder="例如：架空世界线" /></label>
+        <div class="field-row">
+          <label>分歧年份<input id="branchForkYear" type="number" value="1368" required /></label>
+          <label>分支色<input id="branchColor" type="color" value="#d4a75b" /></label>
+        </div>
+        <label>源自<select id="branchParent"></select></label>
+        <label>所属面线<select id="branchSurface"></select></label>
+        <label>分支简介<textarea id="branchDescription" rows="4" placeholder="这条世界线从哪里开始偏离？"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="button danger branch-delete-button" id="deleteBranchBtn" hidden>删除时间线</button>
+          <button type="button" class="button" id="cancelBranchBtn">取消</button>
+          <button class="button accent" id="branchSubmitBtn" type="submit">创建分支</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="surfaceDialog" class="modal compact-modal">
+      <form id="surfaceForm" class="modal-card">
+        <div class="modal-header">
+          <div><p class="eyebrow">NARRATIVE SURFACE</p><h2 id="surfaceDialogHeading">创建叙事面线</h2></div>
+          <button type="button" class="icon-button" id="closeSurfaceDialog">×</button>
+        </div>
+        <label>面线名称<input id="surfaceName" required placeholder="例如：政治叙事面" /></label>
+        <div class="field-row">
+          <label>父级面线<select id="surfaceParent"></select></label>
+          <label>面线色<input id="surfaceColor" type="color" value="#7a6ee6" /></label>
+        </div>
+        <label>面线简介<textarea id="surfaceDescription" rows="3"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="button danger branch-delete-button" id="deleteSurfaceBtn" hidden>删除面线</button>
+          <button type="button" class="button" id="cancelSurfaceBtn">取消</button>
+          <button class="button accent" id="surfaceSubmitBtn" type="submit">创建面线</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="popover" id="projectMenu" hidden>
+      <button id="exportBtn">导出 JSON</button>
+      <button id="importBtn">导入 JSON</button>
+      <button id="calendarMenuBtn">历法管理</button>
+      <button id="resetBtn" class="danger-text">恢复示例</button>
+      <input id="importFile" type="file" accept="application/json" hidden />
+    </div>
+
+    <dialog id="calendarDialog" class="modal compact-modal calendar-modal">
+      <form method="dialog" class="modal-card">
+        <div class="modal-header">
+          <div><p class="eyebrow">CALENDAR SYSTEM</p><h2>历法管理</h2></div>
+          <button class="icon-button" value="cancel">×</button>
+        </div>
+        <div id="calendarList" class="calendar-list"></div>
+        <label>导入自定义历法 JSON<textarea id="calendarJson" rows="8" spellcheck="false" placeholder='{"name":"星历","months":[30,30,30,30],"secondsPerDay":86400,"epochDay":0}'></textarea></label>
+        <p class="calendar-help">月份数组定义每月天数；epochDay 表示该历法 0年1月1日对应公历 0年1月1日后的天数。</p>
+        <div class="modal-actions">
+          <button class="button" value="cancel">关闭</button>
+          <button class="button accent" id="importCalendarBtn" type="button">导入并切换</button>
+        </div>
+      </form>
+    </dialog>
+
+    <section class="material-drawer" id="materialDrawer" hidden>
+      <div class="material-header">
+        <div><p class="eyebrow">GLOBAL MATERIAL SEARCH</p><h2>跨来源素材库</h2></div>
+        <button class="icon-button" id="closeMaterialBtn" type="button">×</button>
+      </div>
+      <form id="materialSearchForm" class="material-search-form">
+        <input id="materialQuery" type="search" placeholder="搜索人物、事件、书籍或概念…" required />
+        <button class="button accent" type="submit">立即检索</button>
+      </form>
+      <div class="material-sources" id="materialSources"></div>
+      <p class="material-hint">输入后自动检索；拖动来源可调整结果顺序。结果可拖入轨线，或点击“加入中心”。</p>
+      <div id="materialResults" class="material-results"></div>
+    </section>
+
+    <section class="detail-page" id="detailPage" hidden>
+      <header class="detail-page-header">
+        <button type="button" class="button" id="closeDetailBtn">← 返回时间线</button>
+        <div>
+          <p class="eyebrow">NODE DETAIL WORKSPACE</p>
+          <h1 id="detailHeading">节点详细内容</h1>
+          <p id="detailMeta" class="detail-meta"></p>
+        </div>
+        <button type="button" class="button accent" id="detailSaveBtn">保存详细内容</button>
+      </header>
+      <main class="detail-page-main">
+        <article class="detail-editor-panel">
+          <label for="eventDescription">详细内容</label>
+          <textarea id="eventDescription" rows="20" placeholder="人物经历、事件原因、世界观补充……"></textarea>
+        </article>
+        <aside class="detail-tool-panel">
+          <section>
+            <p class="eyebrow">SOURCE</p>
+            <h2>来源与附件</h2>
+            <div id="detailSource" class="detail-source"></div>
+            <div id="detailAttachments" class="detail-attachments"></div>
+          </section>
+          <section class="future-detail-tools">
+            <p class="eyebrow">EXTENSIBLE AREA</p>
+            <h2>详情功能扩展区</h2>
+            <p>后续可在这里加入关系图、版本记录、注释、引用回链等专用功能。</p>
+          </section>
+        </aside>
+      </main>
+    </section>
+
+    <div class="node-context-menu" id="nodeContextMenu" hidden role="menu">
+      <p id="contextMenuTitle">节点操作</p>
+      <button type="button" data-node-command="detail" role="menuitem">打开详细页面</button>
+      <button type="button" data-node-command="duplicate" role="menuitem">创建副本</button>
+      <button type="button" data-node-command="continuity" role="menuitem">切换与前一节点接续</button>
+      <button type="button" data-node-command="material" role="menuitem">搜索相关素材</button>
+      <button type="button" data-node-command="delete" class="danger-text" role="menuitem">删除节点</button>
+    </div>
+
+    <div class="theme-popover" id="themeMenu" hidden>
+      <div class="theme-menu-heading">
+        <div>
+          <strong>界面风格</strong>
+          <span>来自三张参考图的完整界面方案</span>
+        </div>
+      </div>
+      <button class="theme-option" type="button" data-theme="obsidian">
+        <span class="theme-preview obsidian-preview" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>黑曜编辑台</strong><small>高对比黑白与编辑感衬线字体</small></span>
+        <b aria-hidden="true">✓</b>
+      </button>
+      <button class="theme-option" type="button" data-theme="paper">
+        <span class="theme-preview paper-preview" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>纯白工作台</strong><small>留白、柔和圆角与极简灰阶</small></span>
+        <b aria-hidden="true">✓</b>
+      </button>
+      <button class="theme-option" type="button" data-theme="sky">
+        <span class="theme-preview sky-preview" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>云境画廊</strong><small>天空蓝渐变与轻盈画廊氛围</small></span>
+        <b aria-hidden="true">✓</b>
+      </button>
+      <button class="theme-option" type="button" data-theme="orchid">
+        <span class="theme-preview orchid-preview" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>紫樱工作台</strong><small>紫色主调、樱粉层次与高亮玫红</small></span>
+        <b aria-hidden="true">✓</b>
+      </button>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
