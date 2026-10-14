@@ -36,7 +36,6 @@ npm.cmd run serve:web
 `source/.github/workflows/pages.yml` 已经写好，推上去就会自动构建并发布，不需要额外的构建步骤或 `npm install`（脚本只用 Node 内置模块）。
 
 > 本项目实际部署信息：仓库 `https://github.com/blanknow22370/calendar.git`，
-> 仓库根目录对应本机的 `E:\DevelopSoftWare\Codex\CharacterEditor\source`，
 > 发布地址 `https://blanknow22370.github.io/calendar/`。
 > 下文命令中的 `<你的用户名>/<仓库名>` 均指这一组。
 
